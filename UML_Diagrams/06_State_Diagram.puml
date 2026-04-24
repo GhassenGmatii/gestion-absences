@@ -1,0 +1,28 @@
+```puml
+@startuml Gestion_Absences_State_Diagram
+title Diagramme d'États - Absence
+
+[*] --> NonMarquée
+
+NonMarquée : Absence créée mais non traitée
+
+NonMarquée --> Marquée: MarkAbsence()
+
+Marquée : Absence marquée par le professeur
+Marquée --> NonJustifiée: Pas de justification
+Marquée --> EnCoursDeJustification: Justification en attente
+
+EnCoursDeJustification : Justification soumise, en attente d'approbation
+EnCoursDeJustification --> Justifiée: Admin approuve
+EnCoursDeJustification --> NonJustifiée: Admin rejette
+
+NonJustifiée : Absence non justifiée
+NonJustifiée --> [*]: Archivée
+
+Justifiée : Absence justifiée
+Justifiée --> [*]: Archivée
+
+NonJustifiée --> EnCoursDeJustification: Justification ultérieure
+
+@enduml
+```

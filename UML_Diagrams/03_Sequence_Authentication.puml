@@ -1,0 +1,81 @@
+```puml
+@startuml Gestion_Absences_Sequence_Auth
+title Flux d'Authentification - Diagramme de Séquence
+
+actor Client
+participant "API Gateway" as Gateway
+participant "AuthController" as Controller
+participant "AuthService" as Service
+participant "UserRepository" as Repo
+participant "Database" as DB
+
+Client ->> Gateway: POST /api/auth/login
+activate Gateway
+
+Gateway ->> Controller: LoginDto(email, password)
+activate Controller
+
+Controller ->> Service: Login(LoginDto)
+activate Service
+
+Service ->> Repo: GetUserByEmail(email)
+activate Repo
+
+Repo ->> DB: SELECT * FROM Users WHERE Email = @email
+activate DB
+DB -->> Repo: User record
+deactivate DB
+
+Repo -->> Service: User
+deactivate Repo
+
+Service ->> Service: VerifyPassword(password, hash)
+Note over Service: BCrypt.Verify()
+
+Service ->> Service: GenerateAccessToken(User)
+Note over Service: JWT Token (15 min)
+
+Service ->> Service: GenerateRefreshToken(User)
+Note over Service: JWT Token (7 days)
+
+Service ->> Repo: SaveRefreshToken(token)
+activate Repo
+Repo ->> DB: INSERT INTO RefreshTokens
+activate DB
+DB -->> Repo: OK
+deactivate DB
+Repo -->> Service: OK
+deactivate Repo
+
+Service -->> Controller: TokenResponse(accessToken, refreshToken)
+deactivate Service
+
+Controller -->> Gateway: 200 OK + Tokens
+deactivate Controller
+
+Gateway -->> Client: JSON Response
+deactivate Gateway
+
+Note over Client: Client stocke tokens localement
+
+Client ->> Gateway: GET /api/users/profile
+Note over Gateway: Header: Authorization: Bearer {accessToken}
+activate Gateway
+
+Gateway ->> Gateway: ValidateToken(accessToken)
+Note over Gateway: Vérifier signature & expiration
+
+alt Token valide
+    Gateway ->> Controller: Request authentifié
+    Controller -->> Client: 200 OK + User Data
+else Token expiré
+    Gateway -->> Client: 401 Unauthorized
+    Client ->> Gateway: POST /api/auth/refresh-token
+    Gateway ->> Service: Refresh(refreshToken)
+    Service -->> Client: Nouveau accessToken
+end
+
+deactivate Gateway
+
+@enduml
+```

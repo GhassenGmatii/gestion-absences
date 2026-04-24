@@ -1,0 +1,213 @@
+```puml
+@startuml Gestion_Absences_Classes
+package "Models" {
+  class User {
+    - id: int <<PK>>
+    - firstName: string
+    - lastName: string
+    - email: string <<UK>>
+    - passwordHash: string
+    - role: enum[Admin|Teacher|Student]
+    - isActive: boolean
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    --
+    + Login(): void
+    + ChangePassword(): void
+  }
+
+  class Class {
+    - id: int <<PK>>
+    - name: string
+    - description: string
+    - teacherId: int <<FK>>
+    - createdAt: DateTime
+    --
+    + AddStudent(): void
+    + RemoveStudent(): void
+    + GetStudents(): List<Student>
+  }
+
+  class Student {
+    - id: int <<PK>>
+    - userId: int <<FK>>
+    - classId: int <<FK>>
+    - enrolledAt: DateTime
+    --
+    + GetAbsences(): List<Absence>
+    + GetNotifications(): List<Notification>
+  }
+
+  class Absence {
+    - id: int <<PK>>
+    - studentId: int <<FK>>
+    - classId: int <<FK>>
+    - absenceDate: DateTime
+    - isJustified: boolean
+    - reason: string
+    - createdAt: DateTime
+    --
+    + Justify(): void
+    + GetDetails(): AbsenceDto
+  }
+
+  class Notification {
+    - id: int <<PK>>
+    - userId: int <<FK>>
+    - message: string
+    - isRead: boolean
+    - createdAt: DateTime
+    --
+    + MarkAsRead(): void
+    + Delete(): void
+  }
+
+  class RefreshToken {
+    - id: int <<PK>>
+    - userId: int <<FK>>
+    - token: string
+    - expiresAt: DateTime
+    - createdAt: DateTime
+  }
+}
+
+package "DTOs" {
+  class UserDto {
+    - id: int
+    - firstName: string
+    - lastName: string
+    - email: string
+    - role: string
+  }
+
+  class LoginDto {
+    - email: string
+    - password: string
+  }
+
+  class CreateAbsenceDto {
+    - studentId: int
+    - classId: int
+    - absenceDate: DateTime
+    - reason: string
+  }
+
+  class AbsenceResponseDto {
+    - id: int
+    - studentName: string
+    - className: string
+    - absenceDate: DateTime
+    - isJustified: boolean
+  }
+}
+
+package "Services" {
+  interface IAuthService {
+    + Login(LoginDto): TokenDto
+    + Register(RegisterDto): UserDto
+    + RefreshToken(string): TokenDto
+    + ValidateToken(string): boolean
+  }
+
+  interface IUserService {
+    + GetAllUsers(): List<UserDto>
+    + GetUserById(int): UserDto
+    + CreateUser(CreateUserDto): UserDto
+    + UpdateUser(int, UpdateUserDto): UserDto
+    + DeleteUser(int): void
+  }
+
+  interface IAbsenceService {
+    + MarkAbsence(CreateAbsenceDto): AbsenceResponseDto
+    + MarkBulkAbsences(BulkAbsenceDto): List<AbsenceResponseDto>
+    + GetMyAbsences(int): List<AbsenceResponseDto>
+    + GetClassAbsences(int): List<AbsenceResponseDto>
+    + JustifyAbsence(int, string): AbsenceResponseDto
+  }
+
+  interface INotificationService {
+    + SendNotification(int, string): Notification
+    + GetNotifications(int): List<Notification>
+    + MarkAsRead(int): void
+  }
+
+  class AuthService implements IAuthService
+  class UserService implements IUserService
+  class AbsenceService implements IAbsenceService
+  class NotificationService implements INotificationService
+}
+
+package "Repositories" {
+  interface IRepository<T> {
+    + GetById(int): T
+    + GetAll(): List<T>
+    + Add(T): void
+    + Update(T): void
+    + Delete(int): void
+  }
+
+  interface IUserRepository extends IRepository<User>
+  interface IAbsenceRepository extends IRepository<Absence>
+  interface IClassRepository extends IRepository<Class>
+  interface INotificationRepository extends IRepository<Notification>
+
+  class UserRepository implements IUserRepository
+  class AbsenceRepository implements IAbsenceRepository
+  class ClassRepository implements IClassRepository
+  class NotificationRepository implements INotificationRepository
+}
+
+package "Controllers" {
+  class AuthController {
+    - authService: IAuthService
+    --
+    + Login(LoginDto): IActionResult
+    + Register(RegisterDto): IActionResult
+    + RefreshToken(RefreshTokenDto): IActionResult
+  }
+
+  class UserController {
+    - userService: IUserService
+    --
+    + GetAll(): IActionResult
+    + GetById(int): IActionResult
+    + Create(CreateUserDto): IActionResult
+    + Update(int, UpdateUserDto): IActionResult
+    + Delete(int): IActionResult
+  }
+
+  class AbsenceController {
+    - absenceService: IAbsenceService
+    --
+    + MarkAbsence(CreateAbsenceDto): IActionResult
+    + MarkBulk(BulkAbsenceDto): IActionResult
+    + GetMyAbsences(): IActionResult
+    + GetClassAbsences(int): IActionResult
+  }
+}
+
+" Relationships"
+User "1" -- "*" Class : enseigne >
+User "1" -- "*" Student : inscrit >
+Class "1" -- "*" Student : contient >
+Student "1" -- "*" Absence : a >
+Class "1" -- "*" Absence : concerne >
+User "1" -- "*" Notification : reçoit >
+User "1" -- "*" RefreshToken : possède >
+
+AuthController --> IAuthService
+UserController --> IUserService
+AbsenceController --> IAbsenceService
+
+AuthService --> IUserRepository
+UserService --> IUserRepository
+AbsenceService --> IAbsenceRepository
+AbsenceService --> INotificationService
+
+UserRepository --> User
+AbsenceRepository --> Absence
+ClassRepository --> Class
+NotificationRepository --> Notification
+
+@enduml
+```

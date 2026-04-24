@@ -1,0 +1,44 @@
+```puml
+@startuml Gestion_Absences_UseCase
+left to right direction
+activity admin as "Administrateur"
+activity prof as "Professeur"
+activity etudiant as "Étudiant"
+
+package "Système de Gestion des Absences" {
+  usecase UC1 as "Authentifier Utilisateur"
+  usecase UC2 as "Gérer Utilisateurs"
+  usecase UC3 as "Gérer Classes"
+  usecase UC4 as "Inscrire Étudiants"
+  usecase UC5 as "Marquer Absence"
+  usecase UC6 as "Marquer Absence en Masse"
+  usecase UC7 as "Consulter Absences"
+  usecase UC8 as "Justifier Absence"
+  usecase UC9 as "Recevoir Notifications"
+  usecase UC10 as "Consulter Rapports"
+  usecase UC11 as "Exporter (CSV/PDF)"
+}
+
+admin --> UC1
+admin --> UC2
+admin --> UC3
+admin --> UC4
+admin --> UC10
+admin --> UC11
+admin --> UC8
+
+prof --> UC1
+prof --> UC5
+prof --> UC6
+prof --> UC7
+
+etudiant --> UC1
+etudiant --> UC7
+etudiant --> UC9
+
+UC1 ..> UC2 : include
+UC3 --> UC4 : include
+UC5 --> UC9 : include
+
+@enduml
+```

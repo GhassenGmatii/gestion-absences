@@ -1,0 +1,70 @@
+```puml
+@startuml Gestion_Absences_Deployment_Diagram
+title Diagramme de Déploiement
+
+node "Client Devices" {
+    device [Web Browser] as WebBrowser
+    device [Mobile Device] as MobileDevice
+}
+
+node "CDN" {
+    artifact [Static Files] as StaticFiles
+}
+
+node "API Server" {
+    artifact [ASP.NET Core 8.0] as ASPNET
+    artifact [Controllers] as Controllers
+    artifact [Services] as Services
+    artifact [Repositories] as Repositories
+    artifact [Entity Framework] as EF
+}
+
+node "Cache Server" {
+    artifact [Redis Cache] as Redis
+}
+
+node "Database Cluster" {
+    database [SQL Server Primary] as SQLPrimary
+    database [SQL Server Replica] as SQLReplica
+}
+
+node "Message Queue" {
+    artifact [RabbitMQ] as RabbitMQ
+}
+
+node "Backup" {
+    database [Backup DB] as BackupDB
+}
+
+node "Monitoring" {
+    artifact [Prometheus] as Prometheus
+    artifact [Grafana] as Grafana
+    artifact [ELK Stack] as ELK
+}
+
+node "Kubernetes Cluster" {
+    component [API Pod 1] as Pod1
+    component [API Pod 2] as Pod2
+    component [API Pod 3] as Pod3
+}
+
+WebBrowser --> CDN : HTTPS
+MobileDevice --> CDN : HTTPS
+WebBrowser --> ASPNET : REST API
+MobileDevice --> ASPNET : REST API
+CDN --> StaticFiles
+
+ASPNET --> EF
+EF --> SQLPrimary
+SQLPrimary --> SQLReplica : Réplication
+ASPNET --> Redis : Cache
+ASPNET --> RabbitMQ : Messages
+
+SQLPrimary --> BackupDB : Backup quotidien
+
+ASPNET -.-> Prometheus
+ASPNET -.-> ELK
+Prometheus --> Grafana
+
+@enduml
+```

@@ -1,0 +1,58 @@
+```puml
+@startuml Gestion_Absences_Activity_Workflow
+title Workflow de Gestion des Absences
+
+start
+if (L'utilisateur est authentifié?) then (Non)
+    :Redirection vers Login;
+    :Authentification;
+else (Oui)
+endif
+
+if (L'utilisateur est Administrateur?) then (Oui)
+    :Afficher Dashboard Admin;
+    if (Action?) then (Gestion Utilisateurs)
+        :CRUD Utilisateurs;
+    elseif (Gestion Classes)
+        :Créer/Modifier/Supprimer Classes;
+        :Inscrire Étudiants;
+    elseif (Consulter Rapports)
+        :Générer Rapports;
+        if (Format?) then (CSV)
+            :Exporter CSV;
+        elseif (PDF)
+            :Exporter PDF;
+        else (Écran)
+            :Afficher Rapport;
+        endif
+    endif
+elseif (L'utilisateur est Professeur?) then (Oui)
+    :Afficher Dashboard Professeur;
+    if (Action?) then (Marquer Absences)
+        :Sélectionner Classe;
+        :Sélectionner Étudiants;
+        if (Marquer en masse?) then (Oui)
+            :MarkBulkAbsences();
+        else (Non)
+            :MarkAbsence();
+        endif
+        :Créer Notifications;
+        :Sauvegarder en BD;
+    elseif (Consulter Absences)
+        :Afficher Absences Classe;
+    endif
+elseif (L'utilisateur est Étudiant?) then (Oui)
+    :Afficher Dashboard Étudiant;
+    if (Action?) then (Consulter Absences)
+        :Afficher Mes Absences;
+    elseif (Consulter Notifications)
+        :Afficher Notifications;
+        :Marquer comme lu;
+    endif
+endif
+
+:Retour au Menu Principal;
+stop
+
+@enduml
+```

@@ -1,0 +1,103 @@
+```puml
+@startuml Gestion_Absences_Sequence_Absence
+title Flux de Gestion des Absences - Diagramme de Séquence
+
+actor Professeur
+participant "API" as API
+participant "AbsenceController" as Controller
+participant "AbsenceService" as Service
+participant "Repository" as Repo
+participant "NotificationService" as NotifService
+participant "Database" as DB
+actor Étudiant
+
+Professeur ->> API: POST /api/absences/bulk
+Note over API: { classId: 1, studentIds: [...], date: "2024-04-20" }
+activate API
+
+API ->> Controller: MarkBulkAbsences(BulkDto)
+activate Controller
+
+Controller ->> Service: MarkBulkAbsences(BulkDto)
+activate Service
+
+loop Pour chaque StudentId
+    Service ->> Repo: GetStudent(studentId)
+    activate Repo
+    Repo ->> DB: SELECT FROM Students WHERE Id = @id
+    activate DB
+    DB -->> Repo: Student
+    deactivate DB
+    Repo -->> Service: Student
+    deactivate Repo
+    
+    Service ->> Repo: CreateAbsence(Absence)
+    activate Repo
+    Repo ->> DB: INSERT INTO Absences
+    activate DB
+    DB -->> Repo: OK + AbsenceId
+    deactivate DB
+    Repo -->> Service: Absence
+    deactivate Repo
+    
+    Service ->> NotifService: SendNotification(studentId, message)
+    activate NotifService
+    NotifService ->> Repo: SaveNotification(Notification)
+    activate Repo
+    Repo ->> DB: INSERT INTO Notifications
+    activate DB
+    DB -->> Repo: OK
+    deactivate DB
+    Repo -->> NotifService: OK
+    deactivate Repo
+    NotifService -->> Service: OK
+    deactivate NotifService
+end
+
+Service -->> Controller: List<AbsenceResponse>
+deactivate Service
+
+Controller -->> API: 201 Created
+deactivate Controller
+
+API -->> Professeur: { markedCount: 4, absences: [...] }
+deactivate API
+
+Note over Étudiant: Étudiant reçoit notification
+
+Étudiant ->> API: GET /api/notifications
+activate API
+API ->> Controller: GetNotifications(studentId)
+activate Controller
+Controller ->> Repo: GetNotificationsByUserId(studentId)
+activate Repo
+Repo ->> DB: SELECT * FROM Notifications WHERE UserId = @userId
+activate DB
+DB -->> Repo: Notifications
+deactivate DB
+Repo -->> Controller: Notifications
+deactivate Repo
+Controller -->> API: Notifications
+deactivate Controller
+API -->> Étudiant: 200 OK + Notifications
+deactivate API
+
+Étudiant ->> API: GET /api/absences/my
+activate API
+API ->> Controller: GetMyAbsences(userId)
+activate Controller
+Controller ->> Repo: GetAbsencesByStudent(studentId)
+activate Repo
+Repo ->> DB: SELECT * FROM Absences WHERE StudentId = @studentId
+activate DB
+DB -->> Repo: Absences
+deactivate DB
+Repo -->> Controller: Absences
+deactivate Repo
+Controller -->> API: AbsenceList
+deactivate Controller
+API -->> Étudiant: 200 OK + Absences
+deactivate API
+
+@enduml
+```
