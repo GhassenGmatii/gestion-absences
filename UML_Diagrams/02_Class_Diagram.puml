@@ -1,47 +1,51 @@
-```puml
 @startuml Gestion_Absences_Classes
+!theme plain
+
 package "Models" {
   class User {
-    - id: int <<PK>>
+    - id: int
     - firstName: string
     - lastName: string
-    - email: string <<UK>>
+    - email: string
     - passwordHash: string
-    - role: enum[Admin|Teacher|Student]
+    - role: string
     - isActive: boolean
     - createdAt: DateTime
     - updatedAt: DateTime
     --
     + Login(): void
     + ChangePassword(): void
+    + ValidateEmail(): boolean
   }
 
   class Class {
-    - id: int <<PK>>
+    - id: int
     - name: string
     - description: string
-    - teacherId: int <<FK>>
+    - teacherId: int
     - createdAt: DateTime
     --
     + AddStudent(): void
     + RemoveStudent(): void
-    + GetStudents(): List<Student>
+    + GetStudents(): List
+    + GetTeacher(): User
   }
 
   class Student {
-    - id: int <<PK>>
-    - userId: int <<FK>>
-    - classId: int <<FK>>
+    - id: int
+    - userId: int
+    - classId: int
     - enrolledAt: DateTime
     --
-    + GetAbsences(): List<Absence>
-    + GetNotifications(): List<Notification>
+    + GetAbsences(): List
+    + GetNotifications(): List
+    + GetUser(): User
   }
 
   class Absence {
-    - id: int <<PK>>
-    - studentId: int <<FK>>
-    - classId: int <<FK>>
+    - id: int
+    - studentId: int
+    - classId: int
     - absenceDate: DateTime
     - isJustified: boolean
     - reason: string
@@ -49,25 +53,29 @@ package "Models" {
     --
     + Justify(): void
     + GetDetails(): AbsenceDto
+    + GetStudent(): Student
   }
 
   class Notification {
-    - id: int <<PK>>
-    - userId: int <<FK>>
+    - id: int
+    - userId: int
     - message: string
     - isRead: boolean
     - createdAt: DateTime
     --
     + MarkAsRead(): void
     + Delete(): void
+    + GetUser(): User
   }
 
   class RefreshToken {
-    - id: int <<PK>>
-    - userId: int <<FK>>
+    - id: int
+    - userId: int
     - token: string
     - expiresAt: DateTime
     - createdAt: DateTime
+    --
+    + IsExpired(): boolean
   }
 }
 
@@ -85,10 +93,25 @@ package "DTOs" {
     - password: string
   }
 
+  class RegisterDto {
+    - firstName: string
+    - lastName: string
+    - email: string
+    - password: string
+    - role: string
+  }
+
   class CreateAbsenceDto {
     - studentId: int
     - classId: int
     - absenceDate: DateTime
+    - reason: string
+  }
+
+  class BulkAbsenceDto {
+    - classId: int
+    - absenceDate: DateTime
+    - studentIds: List
     - reason: string
   }
 
@@ -98,6 +121,12 @@ package "DTOs" {
     - className: string
     - absenceDate: DateTime
     - isJustified: boolean
+  }
+
+  class TokenDto {
+    - accessToken: string
+    - refreshToken: string
+    - expiresIn: int
   }
 }
 
@@ -110,7 +139,7 @@ package "Services" {
   }
 
   interface IUserService {
-    + GetAllUsers(): List<UserDto>
+    + GetAllUsers(): List
     + GetUserById(int): UserDto
     + CreateUser(CreateUserDto): UserDto
     + UpdateUser(int, UpdateUserDto): UserDto
@@ -119,37 +148,68 @@ package "Services" {
 
   interface IAbsenceService {
     + MarkAbsence(CreateAbsenceDto): AbsenceResponseDto
-    + MarkBulkAbsences(BulkAbsenceDto): List<AbsenceResponseDto>
-    + GetMyAbsences(int): List<AbsenceResponseDto>
-    + GetClassAbsences(int): List<AbsenceResponseDto>
+    + MarkBulkAbsences(BulkAbsenceDto): List
+    + GetMyAbsences(int): List
+    + GetClassAbsences(int): List
     + JustifyAbsence(int, string): AbsenceResponseDto
   }
 
   interface INotificationService {
     + SendNotification(int, string): Notification
-    + GetNotifications(int): List<Notification>
+    + GetNotifications(int): List
+    + GetUnreadCount(int): int
     + MarkAsRead(int): void
+  }
+
+  interface IClassService {
+    + GetAllClasses(): List
+    + GetClassById(int): Class
+    + CreateClass(CreateClassDto): Class
+    + UpdateClass(int, UpdateClassDto): Class
+    + DeleteClass(int): void
+  }
+
+  interface IReportService {
+    + GetSummary(): ReportSummary
+    + ExportCsv(): byte
+    + ExportPdf(): byte
   }
 
   class AuthService implements IAuthService
   class UserService implements IUserService
   class AbsenceService implements IAbsenceService
   class NotificationService implements INotificationService
+  class ClassService implements IClassService
+  class ReportService implements IReportService
 }
 
 package "Repositories" {
-  interface IRepository<T> {
-    + GetById(int): T
-    + GetAll(): List<T>
-    + Add(T): void
-    + Update(T): void
+  interface IRepository {
+    + GetById(int): Object
+    + GetAll(): List
+    + Add(Object): void
+    + Update(Object): void
     + Delete(int): void
   }
 
-  interface IUserRepository extends IRepository<User>
-  interface IAbsenceRepository extends IRepository<Absence>
-  interface IClassRepository extends IRepository<Class>
-  interface INotificationRepository extends IRepository<Notification>
+  interface IUserRepository extends IRepository {
+    + GetByEmail(string): User
+    + GetByRole(string): List
+  }
+
+  interface IAbsenceRepository extends IRepository {
+    + GetByStudent(int): List
+    + GetByClass(int): List
+  }
+
+  interface IClassRepository extends IRepository {
+    + GetByTeacher(int): List
+  }
+
+  interface INotificationRepository extends IRepository {
+    + GetByUser(int): List
+    + GetUnread(int): List
+  }
 
   class UserRepository implements IUserRepository
   class AbsenceRepository implements IAbsenceRepository
@@ -163,7 +223,7 @@ package "Controllers" {
     --
     + Login(LoginDto): IActionResult
     + Register(RegisterDto): IActionResult
-    + RefreshToken(RefreshTokenDto): IActionResult
+    + RefreshToken(string): IActionResult
   }
 
   class UserController {
@@ -176,6 +236,17 @@ package "Controllers" {
     + Delete(int): IActionResult
   }
 
+  class ClassController {
+    - classService: IClassService
+    --
+    + GetAll(): IActionResult
+    + GetById(int): IActionResult
+    + Create(CreateClassDto): IActionResult
+    + Update(int, UpdateClassDto): IActionResult
+    + Delete(int): IActionResult
+    + GetStudents(int): IActionResult
+  }
+
   class AbsenceController {
     - absenceService: IAbsenceService
     --
@@ -184,25 +255,45 @@ package "Controllers" {
     + GetMyAbsences(): IActionResult
     + GetClassAbsences(int): IActionResult
   }
+
+  class NotificationController {
+    - notificationService: INotificationService
+    --
+    + GetNotifications(): IActionResult
+    + GetUnread(): IActionResult
+    + MarkAsRead(int): IActionResult
+  }
+
+  class ReportController {
+    - reportService: IReportService
+    --
+    + GetSummary(): IActionResult
+    + ExportCsv(): FileResult
+    + ExportPdf(): FileResult
+  }
 }
 
-" Relationships"
-User "1" -- "*" Class : enseigne >
-User "1" -- "*" Student : inscrit >
-Class "1" -- "*" Student : contient >
-Student "1" -- "*" Absence : a >
-Class "1" -- "*" Absence : concerne >
-User "1" -- "*" Notification : reçoit >
-User "1" -- "*" RefreshToken : possède >
+User "1" -- "*" Class : enseigne
+User "1" -- "*" Student : inscrit
+Class "1" -- "*" Student : contient
+Student "1" -- "*" Absence : a
+Class "1" -- "*" Absence : concernant
+User "1" -- "*" Notification : reçoit
+User "1" -- "*" RefreshToken : possede
 
 AuthController --> IAuthService
 UserController --> IUserService
+ClassController --> IClassService
 AbsenceController --> IAbsenceService
+NotificationController --> INotificationService
+ReportController --> IReportService
 
 AuthService --> IUserRepository
 UserService --> IUserRepository
+ClassService --> IClassRepository
 AbsenceService --> IAbsenceRepository
 AbsenceService --> INotificationService
+NotificationService --> INotificationRepository
 
 UserRepository --> User
 AbsenceRepository --> Absence
@@ -210,4 +301,3 @@ ClassRepository --> Class
 NotificationRepository --> Notification
 
 @enduml
-```
