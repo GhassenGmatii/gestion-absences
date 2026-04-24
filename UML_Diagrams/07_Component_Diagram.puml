@@ -1,61 +1,59 @@
-```puml
 @startuml Gestion_Absences_Component_Diagram
 title Diagramme des Composants
 
 package "Client Layer" {
-    component [Web App] as WebApp
-    component [Mobile App] as MobileApp
-    component [Swagger UI] as SwaggerUI
+    component WebApp
+    component MobileApp
+    component SwaggerUI
 }
 
 package "API Layer" {
-    component [API Gateway] as Gateway
-    component [JWT Middleware] as JWTMid
-    component [Exception Handler] as ExceptionHandler
+    component Gateway
+    component JWTMid
+    component ExceptionHandler
 }
 
 package "Controller Layer" {
-    component [AuthController] as AuthCtrl
-    component [UserController] as UserCtrl
-    component [ClassController] as ClassCtrl
-    component [AbsenceController] as AbsenceCtrl
-    component [NotificationController] as NotifCtrl
-    component [ReportController] as ReportCtrl
+    component AuthCtrl
+    component UserCtrl
+    component ClassCtrl
+    component AbsenceCtrl
+    component NotifCtrl
+    component ReportCtrl
 }
 
 package "Service Layer" {
-    component [AuthService] as AuthSvc
-    component [UserService] as UserSvc
-    component [ClassService] as ClassSvc
-    component [AbsenceService] as AbsenceSvc
-    component [NotificationService] as NotifSvc
-    component [ReportService] as ReportSvc
+    component AuthSvc
+    component UserSvc
+    component ClassSvc
+    component AbsenceSvc
+    component NotifSvc
+    component ReportSvc
 }
 
 package "Repository Layer" {
-    component [UserRepository] as UserRepo
-    component [ClassRepository] as ClassRepo
-    component [AbsenceRepository] as AbsenceRepo
-    component [NotificationRepository] as NotifRepo
+    component UserRepo
+    component ClassRepo
+    component AbsenceRepo
+    component NotifRepo
 }
 
 package "Data Access Layer" {
-    component [DbContext] as DbCtx
-    component [Entity Framework Core] as EFCore
+    component DbCtx
+    component EFCore
 }
 
 package "Database Layer" {
-    component [SQL Server] as SQLServer
-    component [InMemory DB] as InMemDB
+    component SQLServer
+    component InMemDB
 }
 
 package "Cross-Cutting Concerns" {
-    component [Logging] as Logger
-    component [Security] as Security
-    component [Validation] as Validator
+    component Logger
+    component Security
+    component Validator
 }
 
-" Connections
 WebApp --> Gateway
 MobileApp --> Gateway
 SwaggerUI --> Gateway
@@ -100,4 +98,3 @@ UserSvc -.-> Security
 AbsenceSvc -.-> Validator
 
 @enduml
-```
